@@ -2,6 +2,14 @@
 node_modules/
 package-lock.json
 
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
 # Environment variables
 .env
 .env.local
