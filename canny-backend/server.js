@@ -3,6 +3,7 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
+const axios = require('axios');
 
 const app = express();
 const pool = new Pool({
@@ -27,6 +28,18 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// PYTHON ROUTES
+app.get('/api/recommendations/:userId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    // Call Python service
+    const response = await axios.get(`http://localhost:5001/api/recommendations/users/${userId}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // AUTH ROUTES
 app.post('/api/auth/register', async (req, res) => {

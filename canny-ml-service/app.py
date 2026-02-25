@@ -14,14 +14,18 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# change to use env variables eventually
 def get_db_conn():
-    conn = psycopg2.connect(
-        host="localhost",
-        database="canny",
-        user="gabrielperri",
-        password=""
-    )
-    return conn
+    try:
+        conn = psycopg2.connect(
+            host="localhost",
+            database="canny",
+            user="gabrielperri",
+            password=""
+        )
+        return conn
+    except Exception as e:
+        print("Failed to get connection!")
 
 @tool
 def get_user_learning_materials(user_id: int) -> str:
@@ -33,7 +37,10 @@ def get_user_learning_materials(user_id: int) -> str:
         user_id: The ID of the user to fetch materials for
     """
     try:
+        print("Attempting DB Connection (Py)")
         conn = get_db_conn()
+        if(conn):
+            print("Connection successful!")
         
         query = """
             SELECT 
@@ -112,6 +119,13 @@ def recommend_learning_items(user_id):
         {{"title": "Book/Course Title", "author": "Author Name", "type": "book/course/article", "reason": "Why this is recommended"}},
         {{"title": "Another Title", "author": "Author Name", "type": "book/course", "reason": "Why this is recommended"}}
         ]
+        
+        CRITICAL RULES:
+        - Do NOT include any explanatory text before the JSON array
+        - Do NOT include any text after the JSON array
+        - Do NOT use markdown code blocks or ```json
+        - ONLY output the raw JSON array starting with [ and ending with ]
+        - Your entire response must be valid JSON that starts with [ and ends with ]
 
         Be specific and only recommend high-quality, relevant content that truly matches their interests."""),
                     MessagesPlaceholder(variable_name="agent_scratchpad"),
@@ -145,7 +159,6 @@ def recommend_learning_items(user_id):
         Be specific and only recommend high-quality, relevant content that truly matches their interests."""
         )
         
-        user_id = 1
         inputs = {
             "messages": [
                 {
@@ -175,9 +188,21 @@ def recommend_learning_items(user_id):
         if final_ai_message:
             # Try to parse as JSON array, else return as text
             try:
-                recommendations = json.loads(final_ai_message)
-                return jsonify({"recommendations": recommendations})
-            except Exception:
+                # Extract JSON array from the response
+                import re
+                
+                # Look for JSON array pattern in the text
+                json_match = re.search(r'\[[\s\S]*\]', final_ai_message)
+                if json_match:
+                    json_str = json_match.group(0)
+                    recommendations = json.loads(json_str)
+                    return jsonify({"recommendations": recommendations})
+                else:
+                    # Try parsing the whole thing
+                    recommendations = json.loads(final_ai_message)
+                    return jsonify({"recommendations": recommendations})
+            except Exception as e:
+                print(f"JSON parsing error: {e}")
                 # Not valid JSON, return as plain text
                 return jsonify({"recommendations": [], "raw": final_ai_message})
 

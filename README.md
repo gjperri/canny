@@ -32,6 +32,13 @@ npm install
 npm start
 ```
 
+### Python Service
+```bash
+cd canny-ml-service
+python3 app.py
+```
+
+
 ## Tech Stack
 
 - **Frontend**: React, Tailwind CSS, Lucide Icons
